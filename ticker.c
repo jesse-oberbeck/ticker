@@ -147,7 +147,13 @@ stock * buildNode(char *file)
         char *token = strtok(file, " ");
         char *symbol = calloc(strlen(token) + 1, 1);
         strncpy(symbol,token, strlen(token));
-        int value = strtod(strtok(NULL, " "), NULL) * 100;
+        token = strtok(NULL, " ");
+        if(!token)
+        {
+            puts("NOTOK");
+            return(NULL);
+        }
+        int value = strtod(token, NULL) * 100;
         company->symbol = symbol;
         company->value = value;
 
@@ -204,7 +210,11 @@ int main(int argc, char **argv)
         }
         */
         company = buildNode(buffer);
-
+        if(company == NULL)
+        {
+            puts("INVALID ENTRY DETECTED!");
+            exit(1);
+        }
         if(company->symbol)
         {
             stock * check = Find(root, company);
@@ -220,6 +230,11 @@ int main(int argc, char **argv)
     while(fgets(buffer, sizeof(buffer), stdin) != NULL)
     {
         company = buildNode(buffer);
+        if(company == NULL)
+        {
+            puts("INVALID ENTRY DETECTED!");
+            exit(1);
+        }
 
         if(company->symbol)
         {
