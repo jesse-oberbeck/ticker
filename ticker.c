@@ -1,17 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <unistd.h>
 
 struct Stock
 {
     char *symbol;
     double value;
-    char *name;
+    char *name; //Long optional name.
     struct Stock *left;
     struct Stock *right;
 };
 typedef struct Stock stock;
 
+void
+destroy(
+    stock * root)
+{
+    //Function taken and modified from BST exercise done in class.
+    if (root == NULL)           // or if (!root)
+        return;
+
+    destroy(root->left);
+    destroy(root->right);
+    free(root->symbol);
+    root->symbol = NULL;
+    free(root->name);
+    root->name = NULL;
+    free(root);
+}
+
+void
+printTree(
+    stock * root)
+{
+    if (root == NULL)
+    {
+        return;
+    }
+
+    printTree(root->left);
+
+    printf("%s\n", root->symbol);
+    printf("%f\n", root->value);
+    if(root->name)
+    {
+        printf("%s\n\n", root->name);
+    }
+
+    printTree(root->right);
+}
 
 FILE *
 openFile(
@@ -25,52 +64,148 @@ openFile(
     return (fopen(fileName, "r"));
 }
 
-stock *insertStock(stock *market, stock *s)
+//TODO: For some reason, assigning left and right to null also nullifies symbol, and getting segfault on second line insertion.
+stock *insertStock(stock *root, stock *s)
 {
-    if(!market)
+    if(s->symbol == NULL)
     {
-        return(s);
+        puts("NO SYMBOL");
+        return(root);
+    }
+    if(root == NULL)
+    {
+        root = calloc(sizeof(*root), 1);
+
+        if(!root)
+        {
+            puts("ERROR.");
+            return(NULL);
+        }
+        else
+        {
+            //Make the node, fill with data.
+            root->value = s->value;
+            root->symbol = calloc(strlen(s->symbol) + 1, 1);
+            
+            //printf("STRING: %s\n", s->symbol);
+            strncpy(root->symbol, s->symbol, strlen(s->symbol) + 1);//+1s might not be needed.
+            //printf("MS1: %s\n", root->symbol);
+            //puts("NAME CHECK");
+            if(s->name != NULL)
+            {
+                root->name = calloc(strlen(s->name) + 1, 1);
+                //puts("~HAVE NAME~");
+                strncpy(root->name, s->name, strlen(s->name) + 1);
+            }
+
+            root->left = NULL;
+            root->right = NULL;
+            //printf("MS2: %s\n", root->symbol);
+            //printf("MV: %f\n", root->value);
+        }
     }
     else
     {
-        if(s->value > market->value);
+        //Move to appropriate free node.
+        if(s->value < root->value)
+        {
+            //puts("left");
+            root->left = insertStock(root->left, s);
+        }
+        else
+        {
+            //puts("right");
+            root->right = insertStock(root->right, s);
+        }
     }
+    //free(s);
+    return(root);
 }
 
-stock * buildMarket(FILE *file)
+
+stock * buildNode(char *file)
 {
-    char buffer[128];
-    fgets(buffer, 128, file);
-    //printf("buffer: %s\n", buffer);
-    char *token = strtok(buffer, " ");
-    char *symbol = token;
+    stock *company = calloc(sizeof(stock), 1);
+    
+    if(!file)
+    {
+        return(NULL);
+    }
+    //printf("buffer: %s\n", file);
 
-    double value = strtod(strtok(NULL, " "), NULL);
-    printf("SYMBOL: %s \nVALUE: %f\n", symbol, value);
+    if((file[0] != '\0') && (file[0] != '\n'))
+    {
+        char *token = strtok(file, " ");
+        char *symbol = calloc(strlen(token) + 1, 1);
+        strncpy(symbol,token, strlen(token));
+        double value = strtod(strtok(NULL, " "), NULL);
+        company->symbol = symbol;
+        company->value = value;
 
-    char *name = NULL;
-    name = strtok(NULL, "");
-
-    stock *company = malloc(sizeof(stock));
-    company->symbol = symbol;
-    company->value = value;
-    company->name = name;
-    printf("NAME: %s\n", company->name);
+        //Handle optional name.
+        token = strtok(NULL, "#");
+        char *name = NULL;
+        if((token))
+        {
+            company->name = calloc(strlen(token) + 1, 1);
+            strncpy(company->name, token, strlen(token));
+            //company->name = name;
+        }
+        else
+        {
+            company->name = NULL;
+        }
+        company->left = NULL;
+        company->right = NULL;
+    }
+    return(company);
 }
 
+void handler(int sig)
+{
+    signal(SIGINT, SIG_DFL);
+}
 
 
 int main(int argc, char **argv)
 {
-    stock *market = NULL;
+    stock *company = NULL;
+    stock *root = NULL;
     //Check for sufficient arguments/files.
     if (argc < 2)
     {
         puts("Not enough arguments.");
         return (1);
     }
-    stock *root = NULL;
+    //stock *root = NULL;
     FILE *file;
     file = openFile(argv[1]);
-    market = buildMarket(file);
+    if(!file)
+    {
+        puts("Not a valid file.");
+        exit(1);
+    }
+    char buffer[128] = {'\0'};
+    while(!feof(file))
+    {
+        char * check = fgets(buffer, 128, file);
+        if(check == NULL)
+        {
+            fgets(buffer, sizeof(buffer), stdin);
+        }
+
+        company = buildNode(buffer);
+
+        if(company->symbol)
+        {
+            //printf("retco: %s\n", company->symbol);
+            root = insertStock(root, company);
+        }
+        destroy(company);
+        fflush(stdin);
+        buffer[0] = '\0';
+    }
+    printTree(root);
+    destroy(root);
+    fclose(file);
 }
