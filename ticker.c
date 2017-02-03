@@ -3,6 +3,7 @@
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
+#include <ctype.h>
 
 struct Stock
 {
@@ -42,11 +43,15 @@ printTree(
 
     printTree(root->left);
 
-    printf("\n%s\n", root->symbol);
+    printf("%s\n", root->symbol);
     printf("%.2f\n", (double)root->value/100);
     if(root->name)
     {
-        printf("%s\n", root->name);
+        printf("%s\n\n", root->name);
+    }
+    else
+    {
+        puts(" ");
     }
 
     printTree(root->right);
@@ -147,6 +152,15 @@ stock * buildNode(char *file)
         char *token = strtok(file, " ");
         char *symbol = calloc(strlen(token) + 1, 1);
         strncpy(symbol,token, strlen(token));
+        for(int i = 0; i <= strlen(token); ++i)
+        {
+            //Remove newlines, and convert to uppercase.
+            if(symbol[i] == '\n')
+            {
+                symbol[i] == '\n';
+            }
+            symbol[i] = toupper(symbol[i]);
+        }
         token = strtok(NULL, " ");
         if(!token)
         {
