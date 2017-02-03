@@ -7,7 +7,7 @@
 struct Stock
 {
     char *symbol;
-    double value;
+    int value;
     char *name; //Long optional name.
     struct Stock *left;
     struct Stock *right;
@@ -42,11 +42,11 @@ printTree(
 
     printTree(root->left);
 
-    printf("%s\n", root->symbol);
-    printf("%f\n", root->value);
+    printf("\n%s\n", root->symbol);
+    printf("%.2f\n", (double)root->value/100);
     if(root->name)
     {
-        printf("%s\n\n", root->name);
+        printf("%s\n", root->name);
     }
 
     printTree(root->right);
@@ -64,7 +64,28 @@ openFile(
     return (fopen(fileName, "r"));
 }
 
-//TODO: For some reason, assigning left and right to null also nullifies symbol, and getting segfault on second line insertion.
+stock *Find(stock * root, stock *s)
+{
+    //Function taken and modified from BST exercise done in class.
+    if (root == NULL)
+    {
+        return NULL;
+    }
+    if (strcasecmp(s->symbol, root->symbol) < 0)
+    {
+        return Find(root->left, s);
+    }
+    else if (strcasecmp(s->symbol, root->symbol) > 0)
+    {
+        return Find(root->right, s);
+    }
+    else                        //match found.
+    {
+        root->value += s->value;
+        return root;
+    }
+}
+
 stock *insertStock(stock *root, stock *s)
 {
     if(s->symbol == NULL)
@@ -86,39 +107,28 @@ stock *insertStock(stock *root, stock *s)
             //Make the node, fill with data.
             root->value = s->value;
             root->symbol = calloc(strlen(s->symbol) + 1, 1);
-            
-            //printf("STRING: %s\n", s->symbol);
             strncpy(root->symbol, s->symbol, strlen(s->symbol) + 1);//+1s might not be needed.
-            //printf("MS1: %s\n", root->symbol);
-            //puts("NAME CHECK");
             if(s->name != NULL)
             {
                 root->name = calloc(strlen(s->name) + 1, 1);
-                //puts("~HAVE NAME~");
                 strncpy(root->name, s->name, strlen(s->name) + 1);
             }
-
             root->left = NULL;
             root->right = NULL;
-            //printf("MS2: %s\n", root->symbol);
-            //printf("MV: %f\n", root->value);
         }
     }
     else
     {
         //Move to appropriate free node.
-        if(s->value < root->value)
+        if(strcmp(s->symbol, root->symbol) < 0)
         {
-            //puts("left");
             root->left = insertStock(root->left, s);
         }
         else
         {
-            //puts("right");
             root->right = insertStock(root->right, s);
         }
     }
-    //free(s);
     return(root);
 }
 
@@ -131,14 +141,13 @@ stock * buildNode(char *file)
     {
         return(NULL);
     }
-    //printf("buffer: %s\n", file);
 
     if((file[0] != '\0') && (file[0] != '\n'))
     {
         char *token = strtok(file, " ");
         char *symbol = calloc(strlen(token) + 1, 1);
         strncpy(symbol,token, strlen(token));
-        double value = strtod(strtok(NULL, " "), NULL);
+        int value = strtod(strtok(NULL, " "), NULL) * 100;
         company->symbol = symbol;
         company->value = value;
 
@@ -149,7 +158,6 @@ stock * buildNode(char *file)
         {
             company->name = calloc(strlen(token) + 1, 1);
             strncpy(company->name, token, strlen(token));
-            //company->name = name;
         }
         else
         {
@@ -189,22 +197,42 @@ int main(int argc, char **argv)
     while(!feof(file))
     {
         char * check = fgets(buffer, 128, file);
+        /*
         if(check == NULL)
         {
             fgets(buffer, sizeof(buffer), stdin);
         }
-
+        */
         company = buildNode(buffer);
 
         if(company->symbol)
         {
-            //printf("retco: %s\n", company->symbol);
-            root = insertStock(root, company);
+            stock * check = Find(root, company);
+            if(check == NULL)
+            {
+                root = insertStock(root, company);
+            }
         }
         destroy(company);
         fflush(stdin);
         buffer[0] = '\0';
     }
+    while(fgets(buffer, sizeof(buffer), stdin) != NULL)
+    {
+        company = buildNode(buffer);
+
+        if(company->symbol)
+        {
+            stock * check = Find(root, company);
+            if(check == NULL)
+            {
+                root = insertStock(root, company);
+            }
+        }
+        destroy(company);
+        fflush(stdin);
+    }
+
     printTree(root);
     destroy(root);
     fclose(file);
