@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <signal.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -162,12 +163,12 @@ stock * buildNode(char *file)
         char *token = strtok(file, " ");
         char *symbol = calloc(strlen(token) + 1, 1);
         strncpy(symbol,token, strlen(token));
-        for(int i = 0; i <= strlen(token); ++i)
+        for(size_t i = 0; i <= strlen(token); ++i)
         {
             //Remove newlines, and convert to uppercase.
             if(symbol[i] == '\n')
             {
-                symbol[i] == '\n';
+                symbol[i] = '\0';
             }
             symbol[i] = toupper(symbol[i]);
         }
@@ -183,7 +184,7 @@ stock * buildNode(char *file)
 
         //Handle optional name.
         token = strtok(NULL, "#");
-        char *name = NULL;
+        //char *name = NULL;
         if((token))
         {
             company->name = calloc(strlen(token) + 1, 1);
@@ -298,8 +299,9 @@ int main(int argc, char **argv)
         fflush(stdin);
     }
     stock *newroot = NULL;
-    newroot = valueTree(root, newroot);////////////////////////////////////////
-    printTree(root);
+    newroot = valueTree(root, newroot);
+    printTree(newroot);
+    destroy(newroot);
     destroy(root);
     fclose(file);
 }
