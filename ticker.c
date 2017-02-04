@@ -90,8 +90,14 @@ stock *Find(stock * root, stock *s)
     }
     else //When a match is found, adjust the value rather than adding node.
     {
+        int check = root->value + s->value;
+        if(check <= 0)
+        {
+            puts("ERROR: Value now zero or less!\nValue will remain unchanged.");
+            return(root);
+        }
         root->value += s->value;
-        return root;
+        return(root);
     }
 }
 
