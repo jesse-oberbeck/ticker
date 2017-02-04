@@ -99,6 +99,7 @@ int compareSymbol(stock *root, stock *s)
 
 int compareValue(stock* root, stock *s)
 {
+    printf("%i - %i\n", s->value, root->value);
     return(s->value - root->value);
 }
 
@@ -124,6 +125,7 @@ stock *insertStock(stock *root, stock *s, int (*cmp)(stock *root, stock *s))
             root->value = s->value;
             root->symbol = calloc(strlen(s->symbol) + 1, 1);
             strncpy(root->symbol, s->symbol, strlen(s->symbol) + 1);//+1s might not be needed.
+            printf("INSERTING: %s\n", root->symbol);
             if(s->name != NULL)
             {
                 root->name = calloc(strlen(s->name) + 1, 1);
@@ -135,13 +137,16 @@ stock *insertStock(stock *root, stock *s, int (*cmp)(stock *root, stock *s))
     }
     else
     {
+        printf("ROOT SYM: %s\n", root->symbol);
         //Move to appropriate free node.
         if(cmp(root, s) < 0)
         {
+            puts("left");
             root->left = insertStock(root->left, s, cmp);
         }
         else
         {
+            puts("right");
             root->right = insertStock(root->right, s, cmp);
         }
     }
@@ -224,9 +229,10 @@ stock *valueTree(stock* root, stock *newroot)
     {
         return(NULL);
     }
-    valueTree(root->left, newroot);
+    
     printf("!~!~%s\n", root->symbol);
     newroot = insertStock(newroot, root, compareValue);
+    valueTree(root->left, newroot);
     valueTree(root->right, newroot);
     return(newroot);
 }
