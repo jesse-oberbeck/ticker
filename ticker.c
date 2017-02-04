@@ -91,7 +91,17 @@ stock *Find(stock * root, stock *s)
     }
 }
 
-stock *insertStock(stock *root, stock *s)
+int compareSymbol(stock *root, stock *s)
+{
+    return(strcmp(s->symbol, root->symbol));
+}
+
+int compareValue(stock* root, stock *s)
+{
+    return(s->value - root->value);
+}
+
+stock *insertStock(stock *root, stock *s, int (*cmp)(stock *root, stock *s))
 {
     if(s->symbol == NULL)
     {
@@ -125,13 +135,13 @@ stock *insertStock(stock *root, stock *s)
     else
     {
         //Move to appropriate free node.
-        if(strcmp(s->symbol, root->symbol) < 0)
+        if(cmp(root, s) < 0)
         {
-            root->left = insertStock(root->left, s);
+            root->left = insertStock(root->left, s, cmp);
         }
         else
         {
-            root->right = insertStock(root->right, s);
+            root->right = insertStock(root->right, s, cmp);
         }
     }
     return(root);
@@ -189,9 +199,35 @@ stock * buildNode(char *file)
     return(company);
 }
 
-void handler(int sig)
+/*///////////////////////////////
+stock *valueTree(stock *root, stock *newroot)
 {
-    signal(SIGINT, SIG_DFL);
+    puts("VALTREE");
+    if (root == NULL)
+    {
+        return(newroot);
+    }
+    valueTree(root->left, newroot);
+    valueTree(root->right, newroot);
+
+    char buffer[128] = {'\0'};
+    sprintf(buffer, "%s %d %s", root->symbol, root->value, root->name);
+    stock *newStock = buildNode(buffer);
+    printf("NEWSTOCK S: %s\n", newStock->symbol);
+    newroot = insertStock(newroot, newStock, compareValue);
+}
+*////////////////////////////////
+stock *valueTree(stock* root, stock *newroot)
+{
+    if(root == NULL)
+    {
+        return(NULL);
+    }
+    valueTree(root->left, newroot);
+    printf("!~!~%s\n", root->symbol);
+    newroot = insertStock(newroot, root, compareValue);
+    valueTree(root->right, newroot);
+    return(newroot);
 }
 
 
@@ -234,7 +270,7 @@ int main(int argc, char **argv)
             stock * check = Find(root, company);
             if(check == NULL)
             {
-                root = insertStock(root, company);
+                root = insertStock(root, company, compareSymbol);
             }
         }
         destroy(company);
@@ -255,13 +291,14 @@ int main(int argc, char **argv)
             stock * check = Find(root, company);
             if(check == NULL)
             {
-                root = insertStock(root, company);
+                root = insertStock(root, company, compareSymbol);
             }
         }
         destroy(company);
         fflush(stdin);
     }
-
+    stock *newroot = NULL;
+    newroot = valueTree(root, newroot);////////////////////////////////////////
     printTree(root);
     destroy(root);
     fclose(file);
